@@ -1,0 +1,22 @@
+@use "Sass/themes/fonts";
+@import "Sass/themes/typography.module.scss";
+
+div.header {
+    margin: 4px 12px;
+    width: 100%;
+}
+
+div.body {
+    margin: 21px 16%;
+    width: 78%;
+}
+
+div.title_cont {
+    &.langen {
+        @include typo_title(fonts.$consolas);
+    }
+
+    &.langko {
+        @include typo_title(fonts.$nanum_pen);
+    }
+}

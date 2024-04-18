@@ -1,0 +1,8 @@
+@use 'fonts';
+
+@mixin typo_title($ff: fonts.$nanum_pen, $fw: 800, $color: #000) {
+    font-family: $ff;
+    font-size: 36px;
+    font-weight: $fw;
+    font-style: normal;
+}

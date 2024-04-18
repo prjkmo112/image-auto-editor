@@ -1,0 +1,68 @@
+.search_content {
+    display: flex;
+
+    > div {
+        &:nth-child(1) { width: 180px; }
+        &:nth-child(2) { width: 300px; }
+    }
+
+    > :nth-child(n+2) {
+        margin-left: 25px;
+    }
+}
+
+.subtext {
+    font-size: 13px;
+    font-style: italic;
+    opacity: .7;
+}
+
+.add_search_cond {
+    margin: 50px 25%;
+}
+
+.result_content {
+    margin: 200px 0 100px auto;
+}
+
+.MuiCard-root {
+    display: block;
+
+    .MuiCardContent-root {
+        > * {
+            margin: 2px;
+        }
+
+        .LabelChip-root {
+            font-size: 11px;
+            height: 24px;
+        }
+        
+        .LabelAvatar {
+            color: #1565c0;
+            background-color: #fff;
+            font-size: 11px;
+            width: 16px;
+            height: 16px;
+        }
+    }
+}
+
+.MuiDrawer-paper {
+    overflow-y: scroll;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    ::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+.MuiDrawer-paperAnchorBottom {
+    border-radius: 18px;
+    height: 90vh !important;
+}
+
+.detailview_drawerbox {
+    margin: 0 auto;
+    padding: 20px;
+}

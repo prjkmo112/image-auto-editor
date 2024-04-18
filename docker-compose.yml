@@ -1,0 +1,59 @@
+version: '3.8'
+services:
+  db-mongo:
+    image: mongo:6.0.13
+    container_name: db-mongo
+    restart: on-failure
+    ports:
+      - "8004:27017"
+    environment:
+      - MONGO_INITDB_SCRIPTS_DIR=/docker-entrypoint-initdb.d
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=rootpw!
+    networks:
+      - iae_network
+
+  bk-fastapi:
+    container_name: bk-fastapi
+    build: 
+      context: .
+      dockerfile: fastapi.Dockerfile
+    ports:
+      - "8000:8000"
+    stdin_open: true
+    tty: true
+    restart: on-failure
+    depends_on:
+      - db-mongo
+    networks:
+      - iae_network
+    environment:
+      - LANGUAGE=ko
+      - PARALLEL_PROC=proc
+      - MAX_MULTI_PROCESS=cpu_core
+      - MONGO_USER=root
+      - MONGO_PW=rootpw!
+      - MONGO_HOST=host.docker.internal:8004
+      - MONGO_AUTHMECHANISM=SCRAM-SHA-256
+      - MONGO_COLLECTION=main
+
+  front-react:
+    container_name: front-react
+    build: 
+      context: .
+      dockerfile: front-react.Dockerfile
+    ports:
+      - "8001:3000"
+    restart: on-failure
+    depends_on:
+      - db-mongo
+    networks:
+      - iae_network
+    environment:
+      - LANGUAGE=ko
+      - FRONT_BACK_HOST=http://localhost:8000
+
+networks:
+  iae_network:
+    ipam:
+      driver: default

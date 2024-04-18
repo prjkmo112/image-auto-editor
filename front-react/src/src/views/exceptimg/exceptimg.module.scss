@@ -1,0 +1,37 @@
+div.content {
+  margin: 0 auto;
+  margin-top: 40px;
+  width: 95%;
+}
+
+body[data-theme="dark"] {
+  .lightbulb-icon, .MuiInput-input, .Mui-focused, .MuiInputBase-root {
+    color: white;
+  }
+}
+
+.MuiBox-root {
+  &.galleryitem {
+    width: 100%;
+    height: 300px;
+  }
+
+  text-align: center;
+
+  img.gallery-item {
+    overflow: hidden;
+    object-fit: cover;
+    max-width:100%;
+    max-height:100%;
+  }
+}
+
+.MuiSkeleton-root {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.img_code_box {
+  background-color: #C9C9C9;
+  opacity: .3;
+}
