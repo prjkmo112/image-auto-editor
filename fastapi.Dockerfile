@@ -17,9 +17,10 @@ RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 ENV IS_INSIDE_IN_DOCKER_NOT_VALUE_FOR_USER=True
 ENV LANGUAGE=en
+# ENV ALLOWED_IP
 ENV PARALLEL_PROC=proc
 ENV MAX_MULTI_PROCESS=cpu_core
-ENV MONGO_USER=root
+ENV MONGO_USER=default
 ENV MONGO_PW=default
 ENV MONGO_HOST=host.docker.internal:27017
 ENV MONGO_AUTHMECHANISM=DEFAULT
