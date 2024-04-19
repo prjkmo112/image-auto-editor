@@ -11,7 +11,7 @@ from routers import procimg, chkimg, settings
 
 
 
-if os.environ.get('IS_INSIDE_IN_DOCKER_NOT_VALUE_FOR_USER', False):
+if not os.environ.get('IS_INSIDE_IN_DOCKER_NOT_VALUE_FOR_USER', False):
     load_dotenv( dotenv_path="../../.env", verbose=True, override=True )
 
 utils = Utils()

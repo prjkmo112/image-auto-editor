@@ -94,7 +94,19 @@ class ProcessImage:
     def sliceImage(self, dest_img, yst, yend):
         return np.append(dest_img[:yst], dest_img[yend:], axis=0)
             
-    def getSimilarAxis(self, except_np, dest_img, type="all", sliced_per=0.88, calculateMethod="bhattacharyya", selectBest=True, limit=0.05, batch_size=5):
+    def getSimilarAxis(
+        self, 
+        except_np, 
+        dest_img, 
+        type="all", 
+        sliced_per=0.88, 
+        calculateMethod="bhattacharyya", 
+        selectBest=True, 
+        limit=0.05, 
+        batch_size=5,
+        batch_size_x=5,
+        full_width=False
+    ):
         """
         `dest_img`에서 `except_np`와 가장 유사한 이미지의 좌표를 가져온다
 
@@ -105,48 +117,64 @@ class ProcessImage:
 
             calculateMethod ("bhattacharyya"|"correl"|"chisqr"|"all")
         """
-        except_np = except_np[:]
-        dest_img = dest_img[:]
-
         ystPos = 0
         yendPos = except_np.shape[0]
+        xstPos = 0
+        if full_width:
+            xendPos = dest_img.shape[1]
+        else:
+            xendPos = except_np.shape[1]
         nearestPos = {
+            'xstPos': xstPos,
+            'xendPos': xendPos,
             'yst': ystPos,
             'yend': yendPos,
             'distance': 1 if calculateMethod == "bhattacharyya" else 0
         }
 
         while yendPos < dest_img.shape[0]:
-            slicedImgnp = dest_img[ ystPos:yendPos, :, : ]
+            while xendPos <= dest_img.shape[1]:
+                slicedImgnp = dest_img[ ystPos:yendPos, xstPos:xendPos, : ]
 
-            if calculateMethod == "all":
-                _dist_correl = self.compareArr(slicedImgnp, except_np, cv2.HISTCMP_CORREL) # 1: 완전 일치, -1: 완전 불일치, 0: 무관계
-                _dist_chisqr = self.compareArr(slicedImgnp, except_np, cv2.HISTCMP_CHISQR) # 0: 완전 일치, 무한대: 완전 불일치
-                _dist_batta = self.compareArr(slicedImgnp, except_np, cv2.HISTCMP_BHATTACHARYYA) # 0: 완전 일치, 1: 완전 불일치
+                if calculateMethod == "all":
+                    _dist_correl = self.compareArr(slicedImgnp, except_np, cv2.HISTCMP_CORREL) # 1: 완전 일치, -1: 완전 불일치, 0: 무관계
+                    _dist_chisqr = self.compareArr(slicedImgnp, except_np, cv2.HISTCMP_CHISQR) # 0: 완전 일치, 무한대: 완전 불일치
+                    _dist_batta = self.compareArr(slicedImgnp, except_np, cv2.HISTCMP_BHATTACHARYYA) # 0: 완전 일치, 1: 완전 불일치
 
-                if _dist_chisqr > 1 or _dist_correl < 0:
-                    _distance = 1-_dist_batta
-                else:
-                    _distance = _dist_correl * 0.1 + (1-_dist_chisqr) * 0.2 + (1-_dist_batta) * 0.7
-            elif calculateMethod == "bhattacharyya":
-                _distance = self.compareArr(slicedImgnp, except_np, cv2.HISTCMP_BHATTACHARYYA)
-            elif calculateMethod == "correl":
-                _distance = self.compareArr(slicedImgnp, except_np, cv2.HISTCMP_CORREL)
-            elif calculateMethod == "chisqr":
-                _distance = self.compareArr(slicedImgnp, except_np, cv2.HISTCMP_CHISQR)
+                    if _dist_chisqr > 1 or _dist_correl < 0:
+                        _distance = 1-_dist_batta
+                    else:
+                        _distance = _dist_correl * 0.1 + (1-_dist_chisqr) * 0.2 + (1-_dist_batta) * 0.7
+                elif calculateMethod == "bhattacharyya":
+                    _distance = self.compareArr(slicedImgnp, except_np, cv2.HISTCMP_BHATTACHARYYA)
+                elif calculateMethod == "correl":
+                    _distance = self.compareArr(slicedImgnp, except_np, cv2.HISTCMP_CORREL)
+                elif calculateMethod == "chisqr":
+                    _distance = self.compareArr(slicedImgnp, except_np, cv2.HISTCMP_CHISQR)
+                
+                utils.log.debug(f'[{ystPos}:{yendPos}, {xstPos}:{xendPos}, :] --> {_distance}')
 
-            if not selectBest:
-                if ((calculateMethod == "bhattacharyya" or calculateMethod == "chisqr") and _distance < 0.1) or ((calculateMethod == "all" or calculateMethod == "correl") and _distance > 0.95):
+                if not selectBest:
+                    if ((calculateMethod == "bhattacharyya" or calculateMethod == "chisqr") and _distance < 0.1) or ((calculateMethod == "all" or calculateMethod == "correl") and _distance > 0.95):
+                        nearestPos['yst'] = ystPos
+                        nearestPos['yend'] = yendPos
+                        nearestPos['distance'] = _distance
+                        break
+                if ((calculateMethod == "bhattacharyya" or calculateMethod == "chisqr") and _distance <= nearestPos['distance']) or ((calculateMethod == "all" or calculateMethod == "correl") and _distance >= nearestPos['distance']):
                     nearestPos['yst'] = ystPos
                     nearestPos['yend'] = yendPos
                     nearestPos['distance'] = _distance
-                    break
-            if ((calculateMethod == "bhattacharyya" or calculateMethod == "chisqr") and _distance <= nearestPos['distance']) or ((calculateMethod == "all" or calculateMethod == "correl") and _distance >= nearestPos['distance']):
-                nearestPos['yst'] = ystPos
-                nearestPos['yend'] = yendPos
-                nearestPos['distance'] = _distance
+
+                xstPos += batch_size_x
+                xendPos += batch_size_x
 
             ystPos += batch_size
             yendPos += batch_size
+            
+            xstPos = 0
+            if full_width:
+                xendPos = dest_img.shape[1]
+            else:
+                xendPos = except_np.shape[1]
 
         return nearestPos

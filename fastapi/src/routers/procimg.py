@@ -32,8 +32,10 @@ def cleanWorker(delimg, destImg, body):
         dest_img=destImg,
         type=body.type,
         calculateMethod=body.algorithm_method,
-        batch_size=10,
-        selectBest=True
+        batch_size=body.batch_size,
+        batch_size_x=body.batch_size_x,
+        selectBest=True,
+        full_width=body.full_width
     )
 
     print("cleanWorker stop")
@@ -67,6 +69,10 @@ class Item_clean(BaseModel):
     use_db:            bool=True
     db_label:          dict = Field(title='db의 구분하기 위한 label', examples=[{"key": "value", "key2": "value2"}], default={})
     db_filter:         dict = Field(title='db에서 찾기 위한 label 구분자', description="mongodb docs `label`컬럼에 대한 filter 형식", examples=[{ "(`db_label`에서 정한 key)": "(`db_label`에서 정한 value)" }], default={})
+    full_width:        bool=True
+    batch_size:        int=5
+    batch_size_x:      int=5
+    
 
 @router.post('/clean')
 async def clean(item:Item_clean):
@@ -118,6 +124,16 @@ async def clean(item:Item_clean):
     이 파라미터를 넘기는 순간 db의 값을 사용하는 것에 동의하는 것임. 만약 db의 값을 사용하기 싫다면 이 파라미터를 주지 않으면 된다.
     
     list 요소인 dict 간에 상관관계는 `and`임.
+
+    `full_width`
+    잘라낼 때 x축을 고려하지 않고 잘라낸다. 즉, 오직 y축만을 잘라낸다.
+
+    `batch_size`
+    비교할 때 y축의 batch 크기를 정한다. 이때 단위는 pixel임.
+
+    `batch_size_x`
+    비교할 때 x축의 batch 크기를 정한다. 이때 단위는 pixel임
+    full_width 파라미터가 False인 경우에만 의미가 있는 값임
     """
     USE_DB = False
     RESULT_AXIS = []
