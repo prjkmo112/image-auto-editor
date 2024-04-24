@@ -151,8 +151,6 @@ class ProcessImage:
                     _distance = self.compareArr(slicedImgnp, except_np, cv2.HISTCMP_CORREL)
                 elif calculateMethod == "chisqr":
                     _distance = self.compareArr(slicedImgnp, except_np, cv2.HISTCMP_CHISQR)
-                
-                utils.log.debug(f'[{ystPos}:{yendPos}, {xstPos}:{xendPos}, :] --> {_distance}')
 
                 if not selectBest:
                     if ((calculateMethod == "bhattacharyya" or calculateMethod == "chisqr") and _distance < 0.1) or ((calculateMethod == "all" or calculateMethod == "correl") and _distance > 0.95):
