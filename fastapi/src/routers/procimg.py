@@ -25,8 +25,6 @@ router = APIRouter(
 )
 
 def cleanWorker(delimg, destImg, body):
-    print("cleanWorker start")
-
     axis = procimg.getSimilarAxis(
         except_np=delimg,
         dest_img=destImg,
@@ -37,8 +35,6 @@ def cleanWorker(delimg, destImg, body):
         selectBest=True,
         full_width=body.full_width
     )
-
-    print("cleanWorker stop")
 
     return axis
 
@@ -80,7 +76,6 @@ async def clean(item:Item_clean):
     # 이미지 정리
 
     > 이미지로부터 정해진 제외할 이미지를 잘라냄  
-    > 정해진 [제외할 이미지](/home/except_images/)들
 
     ## Params
     `type`  
@@ -102,11 +97,11 @@ async def clean(item:Item_clean):
 
     `algorithm_method`
     적용할 알고리즘을 선택함. 공통적으로 RGV -> HSV 변환하여 히스토그램으로 인식을 한 다음 분포등 특정 기준으로 유사도를 측정한다
-    각 공식은 [CV2 공식 사이트](https://docs.opencv.org/3.4/d8/dc8/tutorial_histogram_comparison.html) 참고
-    *bhattacharyya* 바타차랴 거리법을 적용. 
-    *correl* 상관관계 정도를 측정. (두 편차의 곱에 합을 두 표준편차의 곱으로 나눈 값)
-    *chisqr* 카이제곱
-    *all* 3개의 알고리즘을 정해진 공식으로 조합하여 사용 
+    각 공식은 [CV2 공식 사이트](https://docs.opencv.org/3.4/d8/dc8/tutorial_histogram_comparison.html) 참고  
+    *bhattacharyya* 바타차랴 거리법을 적용.   
+    *correl* 상관관계 정도를 측정. (두 편차의 곱에 합을 두 표준편차의 곱으로 나눈 값)  
+    *chisqr* 카이제곱  
+    *all* 3개의 알고리즘을 정해진 공식으로 조합하여 사용   
         ```_dist_correl * 0.1 + (1-_dist_chisqr) * 0.2 + (1-_dist_batta) * 0.7```
 
     `limit_value`

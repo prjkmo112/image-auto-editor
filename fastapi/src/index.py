@@ -3,7 +3,6 @@ import sys
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 from module.utils import Utils
 
@@ -59,7 +58,7 @@ app.add_middleware(
 def ipblock(req:Request, next):
     if req.client.host not in ALLOWED_IP:
         utils.log.warn(f"NOT ALLOW BY ({req.client.host})")
-        return JSONResponse(status_code=403, content={ "success": False, "error": True, "errmsg": "Not Allowed" })
+        raise HTTPException(status_code=403, detail="Not Allowed")
 
 def logger(req:Request, next):
     utils.log.info(f'[{req.method} | {req.url}] 요청')
