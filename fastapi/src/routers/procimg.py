@@ -56,7 +56,7 @@ class Item_clean_algorithmMethod(str, Enum):
 
 class Item_clean(BaseModel):
     type:              Item_clean_type = Item_clean_type.all
-    image:             str = Field(title='처리할 이미지 url', description="처리할 이미지 url을 str형으로 보냅니다.", examples=['https://nam1mall.com/web/upload/NNEditor/20220118/2888.jpg'])
+    image:             str = Field(title='처리할 이미지 url', description="처리할 이미지 url을 str형으로 보냅니다.", examples=['https://....~~...jpg'])
     set_del_code:      str
     set_except_images: list[str] = []
     algorithm_method:  Item_clean_algorithmMethod = Item_clean_algorithmMethod.bhattacharyya
