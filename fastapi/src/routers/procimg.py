@@ -141,7 +141,7 @@ async def clean(item:Item_clean):
 
     # mongodb에 저장된 이미지 있는지 확인
     db_img = []
-    if len(item.db_filter.keys()) > 0:
+    if item.use_db and len(item.db_filter.keys()) > 0:
         db_img = list(
             map(
                 lambda doc: dict({ "createdAt": doc['_id'].generation_time }, **doc),
@@ -187,6 +187,26 @@ async def clean(item:Item_clean):
 
             # image slice
             results.sort(key=lambda v: v['yst'])
+
+            # 범위 내에 겹치는 부분 제외, 이때 정확도가 낮은 것 우선으로 제외하기
+            for idx1,axis1 in enumerate(results):
+                for idx2,axis2 in enumerate(results):
+                    if idx2 <= idx1:
+                        continue
+
+                    if not (
+                        (axis1['xend'] < axis2['xst'] or axis1['xst'] > axis2['xend']) or
+                        (axis1['yend'] < axis2['yst'] or axis1['yst'] > axis2['yend'])
+                    ):
+                        # 겹침
+                        # 정확도 비교
+                        if (item.algorithm_method == "all" and axis1['distance'] > axis2['distance']) or (axis1['distance'] < axis2['distance']):
+                            # 더 정확한걸 남긴다(axis1)
+                            axis2['dup'] = True
+                        else:
+                            axis1['dup'] = True
+
+            results = list(filter(lambda v: 'dup' not in v.keys() or not v['dup'], results))
 
             totalSlicedLen = 0
             for axis in results:

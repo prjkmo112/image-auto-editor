@@ -82,8 +82,8 @@ class ProcessImage:
         cvnpdata2 = cv2.cvtColor(np2, cv2.COLOR_BGR2HSV)
         # hsv -> 0~179
         # rgb -> 0~255
-        cvnpdata1 = cv2.calcHist([cvnpdata1], [0,1], None, [180,256], [0, 180, 0, 256])
-        cvnpdata2 = cv2.calcHist([cvnpdata2], [0,1], None, [180,256], [0, 180, 0, 256])
+        cvnpdata1 = cv2.calcHist([cvnpdata1], [0,1], None, [180,256], [0, 180, 0, 256], accumulate=False)
+        cvnpdata2 = cv2.calcHist([cvnpdata2], [0,1], None, [180,256], [0, 180, 0, 256], accumulate=False)
 
         cv2.normalize(cvnpdata1, cvnpdata1, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
         cv2.normalize(cvnpdata2, cvnpdata2, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
@@ -125,8 +125,8 @@ class ProcessImage:
         else:
             xendPos = except_np.shape[1]
         nearestPos = {
-            'xstPos': xstPos,
-            'xendPos': xendPos,
+            'xst': xstPos,
+            'xend': xendPos,
             'yst': ystPos,
             'yend': yendPos,
             'distance': 1 if calculateMethod == "bhattacharyya" else 0
@@ -152,16 +152,15 @@ class ProcessImage:
                 elif calculateMethod == "chisqr":
                     _distance = self.compareArr(slicedImgnp, except_np, cv2.HISTCMP_CHISQR)
 
-                if not selectBest:
-                    if ((calculateMethod == "bhattacharyya" or calculateMethod == "chisqr") and _distance < 0.1) or ((calculateMethod == "all" or calculateMethod == "correl") and _distance > 0.95):
-                        nearestPos['yst'] = ystPos
-                        nearestPos['yend'] = yendPos
-                        nearestPos['distance'] = _distance
-                        break
                 if ((calculateMethod == "bhattacharyya" or calculateMethod == "chisqr") and _distance <= nearestPos['distance']) or ((calculateMethod == "all" or calculateMethod == "correl") and _distance >= nearestPos['distance']):
+                    nearestPos['xst'] = xstPos
+                    nearestPos['xend'] = xendPos
                     nearestPos['yst'] = ystPos
                     nearestPos['yend'] = yendPos
                     nearestPos['distance'] = _distance
+
+                    if not selectBest:
+                        return nearestPos
 
                 xstPos += batch_size_x
                 xendPos += batch_size_x
