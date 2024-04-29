@@ -1,5 +1,6 @@
 import os
 import sys
+import socket
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,9 +17,13 @@ if not os.environ.get('IS_INSIDE_IN_DOCKER_NOT_VALUE_FOR_USER', False):
 utils = Utils()
 
 
+# get docker internal ip
+docker_containerip = socket.gethostbyname(socket.gethostname())
+docker_interip = ".".join(docker_containerip.split('.')[:-1]+['1'])
+
 ALLOWED_IP = [
     # allow only local
-    "::1", "localhost", "127.0.0.1", "192.168.0.1", "::ffff:127.0.0.1"
+    "::1", "localhost", "127.0.0.1", "192.168.0.1", "::ffff:127.0.0.1", docker_interip, f'::ffff:{docker_interip}'
 ] + list(map(lambda v: v.strip(), (os.environ.get('ALLOWED_IP') or "").split(",")))
 
 description = """

@@ -11,7 +11,7 @@ export class GetImagesAPI {
     constructor() {
         this.axios = axios.create({
             baseURL: `${process.env.FRONT_BACK_HOST}/settings`,
-            timeout: 5000,
+            timeout: Number(process.env.BACK_API_TIMEOUT),
             headers: {
                 'Access-Control-Allow-Origin': "*"
             }

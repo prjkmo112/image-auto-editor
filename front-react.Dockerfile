@@ -24,10 +24,12 @@ WORKDIR /home/src/iae-setter
 ENV IS_INSIDE_IN_DOCKER_NOT_VALUE_FOR_USER=True
 ENV LANGUAGE=en
 # ENV FRONT_BACK_HOST
+ENV BACK_API_TIMEOUT=30000
 
 EXPOSE 3000
 
-RUN echo "step 6 > Service App"
+
+RUN echo "step 7 > Service App"
 RUN npm i -g serve
 
 

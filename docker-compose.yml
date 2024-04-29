@@ -6,12 +6,12 @@ services:
     restart: on-failure
     ports:
       - "8004:27017"
+    volumes:
+      - ./mongo/data:/data/db
     environment:
       - MONGO_INITDB_SCRIPTS_DIR=/docker-entrypoint-initdb.d
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=rootpw!
-    networks:
-      - iae_network
 
   bk-fastapi:
     container_name: bk-fastapi
@@ -25,8 +25,6 @@ services:
     restart: on-failure
     depends_on:
       - db-mongo
-    networks:
-      - iae_network
     environment:
       - LANGUAGE=ko
       - PARALLEL_PROC=proc
@@ -47,13 +45,6 @@ services:
     restart: on-failure
     depends_on:
       - db-mongo
-    networks:
-      - iae_network
     environment:
       - LANGUAGE=ko
       - FRONT_BACK_HOST=http://localhost:8000
-
-networks:
-  iae_network:
-    ipam:
-      driver: default
