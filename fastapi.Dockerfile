@@ -26,11 +26,6 @@ ENV MONGO_HOST=host.docker.internal:27017
 ENV MONGO_AUTHMECHANISM=DEFAULT
 ENV MONGO_COLLECTION=main
 
-RUN echo "step 5 > Run prebuild task"
-RUN mkdir -p /home/src/prebuild
-COPY ./fastapi/prebuild /home/src/prebuild
-RUN python /home/src/prebuild/main.py
-
 EXPOSE 8000
 
 RUN echo "step 5 > Start backend program"
