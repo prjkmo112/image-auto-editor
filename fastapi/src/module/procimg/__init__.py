@@ -212,6 +212,7 @@ class ProcessImage:
         flann = cv2.FlannBasedMatcher(index_params,search_params)
         matches = flann.knnMatch(des1,des2,k=2)
 
+        pass_lowe = []  # lowe 기준 통과한 비율을 보기 위함
         for i, (m,n) in enumerate(matches):
             # ratio test as per Lowe's paper
             if m.distance < lowe * n.distance:
@@ -231,7 +232,17 @@ class ProcessImage:
                 # m.distance가 너무 상대적인 거리라 비교적 지표가 될 n.distance로 나눠준 값도 추가해줌
                 nearestPos['distance_lowe'] = m.distance/n.distance
 
+                pass_lowe.append(matches[i])
+
+        # 10%도 포함안되어 있으면 거리가 낮아도 제외
+        if len(pass_lowe)/len(matches) < 0.1:
+            return None
+
         if len(nearestPos.keys()) >= 4:
+            # 크기가 자를 대상에 비해 너무 크면 제외
+            if nearestPos['yend'] - nearestPos['yst'] > except_np.shape[1] * 3 or nearestPos['xend'] - nearestPos['xst'] > except_np.shape[0] * 2:
+                return None
+
             # padding
             if full_width:
                 nearestPos['xst'] = 0
