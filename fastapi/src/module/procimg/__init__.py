@@ -214,7 +214,7 @@ class ProcessImage:
 
         for i, (m,n) in enumerate(matches):
             # ratio test as per Lowe's paper
-            if m.distance < 0.3 * n.distance:
+            if m.distance < lowe * n.distance:
                 point1 = kp2[m.trainIdx]
                 point2 = kp2[n.trainIdx]
 

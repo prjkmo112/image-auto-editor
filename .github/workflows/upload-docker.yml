@@ -9,16 +9,7 @@ env:
   VER: ${{ github.ref_name }}
 
 jobs:
-  check-build-docker:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: docker build
-        run: docker compose -f ${{ env.DOCKER_FILE }} up -d
-
   push-docker:
-    needs: [ check-build-docker ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
