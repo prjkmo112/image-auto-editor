@@ -170,6 +170,7 @@ async def clean(item:Item_clean):
         `passlowe_over_10`  : lowe test를 통과한 매칭이 10%도 안된다면 아무리 유사도가 높아도 제외시킴
         `size_over_twice`   : 자른 결과가 비교한 대상에 비해 2배를 넘는 사이즈라면 제외시킴 (이때 비율 고려 없음, 무조건 사이즈 유사해야 함)
         `ratio_over_twice`  : `size_over_twice`와 비슷하지만 비율을 고려함
+        `kmeans_sub_limit`  : kmeans 사용 시 서브군집의 크기에 대해 제한을 둔다 (50% 수정불가)
 
     `use_kmeans_custom_result`
     같은 특징점이 다른 위치에 있을 경우 그 곳에도 매칭되어버려 문제점이 생김  
