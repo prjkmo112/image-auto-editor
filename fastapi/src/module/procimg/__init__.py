@@ -3,6 +3,7 @@ import numpy as np
 import io
 from PIL import Image
 import cv2
+from sklearn.cluster import KMeans
 
 from module.utils import Utils
 
@@ -190,8 +191,9 @@ class ProcessImage:
         except_np, 
         dest_img,
         full_width=False,
-        padding=50,
-        lowe=0.3 
+        lowe=0.3,
+        use_kmeans_custom_result=False,
+        limit_custom=[]
     ):
         """
         [opencv Example](https://docs.opencv.org/4.x/dc/dc3/tutorial_py_matcher.html) 참고
@@ -212,44 +214,117 @@ class ProcessImage:
         flann = cv2.FlannBasedMatcher(index_params,search_params)
         matches = flann.knnMatch(des1,des2,k=2)
 
-        pass_lowe = []  # lowe 기준 통과한 비율을 보기 위함
-        for i, (m,n) in enumerate(matches):
-            # ratio test as per Lowe's paper
-            if m.distance < lowe * n.distance:
-                point1 = kp2[m.trainIdx]
-                point2 = kp2[n.trainIdx]
+        def calcAxis(_matches):
+            _axis = {}
+            _pass_lowe = []
 
-                if 'xst' not in nearestPos.keys() or point1.pt[0] < nearestPos['xst']:
-                    nearestPos['xst'] = point1.pt[0]
-                if 'yst' not in nearestPos.keys() or point1.pt[1] < nearestPos['yst']:
-                    nearestPos['yst'] = point1.pt[1]
-                if 'xend' not in nearestPos.keys() or point1.pt[0] > nearestPos['xend']:
-                    nearestPos['xend'] = point1.pt[0]
-                if 'yend' not in nearestPos.keys() or point1.pt[1] > nearestPos['yend']:
-                    nearestPos['yend'] = point1.pt[1]
-                
-                nearestPos['distance'] = m.distance
-                # m.distance가 너무 상대적인 거리라 비교적 지표가 될 n.distance로 나눠준 값도 추가해줌
-                nearestPos['distance_lowe'] = m.distance/n.distance
+            for i, (m,n) in enumerate(_matches):
+                if m.distance < lowe * n.distance:
+                    point1 = kp2[m.trainIdx]
+                    point2 = kp2[n.trainIdx]
 
-                pass_lowe.append(matches[i])
+                    if 'xst' not in _axis.keys() or point1.pt[0] < _axis['xst']:
+                        _axis['xst'] = point1.pt[0]
+                    if 'yst' not in _axis.keys() or point1.pt[1] < _axis['yst']:
+                        _axis['yst'] = point1.pt[1]
+                    if 'xend' not in _axis.keys() or point1.pt[0] > _axis['xend']:
+                        _axis['xend'] = point1.pt[0]
+                    if 'yend' not in _axis.keys() or point1.pt[1] > _axis['yend']:
+                        _axis['yend'] = point1.pt[1]
+                    
+                    _axis['distance'] = m.distance
+                    _axis['distance_lowe'] = m.distance/n.distance
+
+                    _pass_lowe.append(_matches[i])
+            
+            return _pass_lowe, _axis
+
+        pass_lowe, nearestPos = calcAxis(matches)
 
         # 10%도 포함안되어 있으면 거리가 낮아도 제외
-        if len(pass_lowe)/len(matches) < 0.1:
+        if 'passlowe_over_10' in limit_custom and len(pass_lowe)/len(matches) < 0.1:
             return None
 
         if len(nearestPos.keys()) >= 4:
             # 크기가 자를 대상에 비해 너무 크면 제외
-            if nearestPos['yend'] - nearestPos['yst'] > except_np.shape[1] * 3 or nearestPos['xend'] - nearestPos['xst'] > except_np.shape[0] * 2:
+            if (
+                'size_over_twice' in limit_custom and 
+                (
+                    nearestPos['yend'] - nearestPos['yst'] > except_np.shape[1] * 2 or 
+                    (not full_width and nearestPos['xend'] - nearestPos['xst'] > except_np.shape[0] * 2)
+                )
+            ):
+                return None
+            
+            # x,y 비율이 자를 대상과 너무 다르면 제외
+            nearestPosRatio = (nearestPos['xend'] - nearestPos['xst'])/(nearestPos['yend'] - nearestPos['yst'])
+            ratio = except_np.shape[1]/except_np.shape[0]
+            if not full_width and 'ratio_over_twice' in limit_custom and (nearestPosRatio-ratio > 0.5 or ratio-nearestPosRatio > 0.5):
                 return None
 
-            # padding
+            if use_kmeans_custom_result:
+                # 같은 특징점이 다른 위치에 있을 경우 그곳에도 매칭되어버려 문제점이 생김
+                # kmeans 군집분류를 통해 군집을 2개로 나뉘어 나뉜 keypoint가 많이 벗어나있다면 제외하고 다시 계산하도록 수정
+                kmeans = KMeans(n_clusters=2, init="k-means++", max_iter=100, random_state=0)
+                kmeans.fit(list(map(lambda v: [ kp2[v[0].trainIdx].pt[0], kp2[v[0].trainIdx].pt[1] ], pass_lowe)))
+
+                main_label = 0
+                sub_label = 1
+                main_indexes = np.where(kmeans.labels_ == 0)[0]
+                sub_indexes = np.where(kmeans.labels_ == 1)[0]
+                if len(sub_indexes) > len(main_indexes):
+                    main_label = 1
+                    sub_label = 0
+                    _ = main_indexes
+                    main_indexes = sub_indexes
+                    sub_indexes = _
+
+                # sub index 길이가 10% 이상이면 삭제 포기
+                if len(sub_indexes) > 1 and len(sub_indexes) / len(kmeans.labels_) > 0.1:
+                    return None
+
+                # sub index 빼고 다시 axis 계산
+                sub_trainIdxes = list(map(lambda v: pass_lowe[v][0].trainIdx, sub_indexes))
+                pass_lowe_kmeans, axis_kmeans = calcAxis([ v for v in matches if v[0].trainIdx not in sub_trainIdxes ])
+
+                # sub_index 와 main_index 간에 중심점 거리 확인
+                # 중심점 사이간에 거리가 해당 점 제외하고 계산하여 나온 axis 범위와 차이가 너무 (크다면 kmeans 적용한 axis를), (작다면 기존 axis를 사용)
+                x_cluster = kmeans.cluster_centers_[main_label][0] - kmeans.cluster_centers_[sub_label][0]
+                y_cluster = kmeans.cluster_centers_[main_label][1] - kmeans.cluster_centers_[sub_label][1]
+
+                axis_x = axis_kmeans['xend'] - axis_kmeans['xst']
+                axis_y = axis_kmeans['yend'] - axis_kmeans['yst']
+
+                use_kmeans = False
+                if y_cluster/axis_y > 2 or axis_y/y_cluster > 2:
+                    use_kmeans = True
+                if not full_width and (x_cluster/axis_x > 2 or axis_x/x_cluster > 2):
+                    use_kmeans = True
+
+                if use_kmeans:
+                    nearestPos = axis_kmeans
+                    pass_lowe = pass_lowe_kmeans
+            
+
+            # padding: 각 길이의 5%
             if full_width:
                 nearestPos['xst'] = 0
                 nearestPos['xend'] = dest_img.shape[1]
             else:
+                padding = (nearestPos['xend'] - nearestPos['xst']) * 5 / 100
+                if padding < 15:
+                    padding = 15
+                if padding > 300:
+                    padding = 300
+
                 nearestPos['xst'] -= padding
                 nearestPos['xend'] += padding
+
+            padding = (nearestPos['yend'] - nearestPos['yst']) * 5 / 100
+            if padding < 15:
+                padding = 15
+            if padding > 300:
+                padding = 300
 
             nearestPos['yst'] -= padding
             nearestPos['yend'] += padding
