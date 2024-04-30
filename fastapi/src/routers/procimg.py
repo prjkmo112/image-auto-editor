@@ -46,7 +46,9 @@ def cleanWorkerFm(delimg, destimg, body):
         except_np=delimg,
         dest_img=destimg,
         full_width=body.full_width,
-        lowe=body.lowe
+        lowe=body.lowe,
+        limit_custom=body.limit_custom
+        use_kmeans_custom_result=body.use_kmeans_custom_result
     )
 
     return axis
@@ -83,7 +85,10 @@ class Item_clean(BaseModel):
     batch_size:        int=5
     batch_size_x:      int=5
     px_box_ratio:      list[float] = [1]
+
     lowe:              float=0.3
+    limit_custom:      list[str] = Field(default=['passlowe_over_10'])
+    use_kmeans_custom_result: bool=False
     
 
 @router.post('/clean')
@@ -152,14 +157,26 @@ async def clean(item:Item_clean):
     `px_box_ratio`
     해상도가 다른 경우에 기본보다 더 크게 잘리거나 더 작게 잘림을 방지하기 위함.
     즉, 제외할 이미지 기준의 px로 box를 만들어 비교했더니 해상도가 맞지 않게 잘림이 문제가 됨.
-    px box 비율을 두어 해당 배열에 있는 대로 모두 비교한다.
-    다만, `full_width` 파라미터가 True인 경우 x축의 비율은 고려하지 않도록 한다.
+    px box 비율을 두어 해당 배열에 있는 대로 모두 비교함. 다만, `full_width` 파라미터가 True인 경우 x축의 비율은 고려하지 않도록 함.
 
     <br><hr>
     
     ### type이 *fm* 일 경우
     `lowe`  
     ratio test as per Lowe's paper
+
+    `limit_custom`
+    특징점 과매칭으로 인한 오류나 그외 여러가지 오류를 방지하기 위한 limit
+        `passlowe_over_10`  : lowe test를 통과한 매칭이 10%도 안된다면 아무리 유사도가 높아도 제외시킴
+        `size_over_twice`   : 자른 결과가 비교한 대상에 비해 2배를 넘는 사이즈라면 제외시킴 (이때 비율 고려 없음, 무조건 사이즈 유사해야 함)
+        `ratio_over_twice`  : `size_over_twice`와 비슷하지만 비율을 고려함
+
+    `use_kmeans_custom_result`
+    같은 특징점이 다른 위치에 있을 경우 그 곳에도 매칭되어버려 문제점이 생김  
+    K-means 군집분류를 통해 군집을 2개로 나뉘어 나뉜 keypoint가 많이 벗어나있다면 제외하고 다시 계산하도록 수정  
+
+    > 대부분의 경우에서는 사용하는 것이 더 정확도가 높게 나올 것임.
+    > 하지만, 데이터의 사이즈에 따른 속도 감소는 감수해야할 사항임.
     """
     USE_DB = False
     RESULT_AXIS = []
@@ -253,7 +270,7 @@ async def clean(item:Item_clean):
                 totalSlicedLen = 0
                 for axis in results:
                     if (
-                        (item.type == "fm" and axis['distance_lowe'] < 0.3) or
+                        (item.type == "fm" and axis['distance'] < 0.3) or
                         (item.type == "hist" and (item.algorithm_method == "all" and axis['distance'] > 0.8) or (item.algorithm_method == "bhattacharyya" and axis['distance'] < 0.2))
                     ):
                         RESULT_AXIS.append(axis)
