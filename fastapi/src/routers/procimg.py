@@ -270,7 +270,7 @@ async def clean(item:Item_clean):
                 totalSlicedLen = 0
                 for axis in results:
                     if (
-                        (item.type == "fm" and axis['distance'] < 0.3) or
+                        (item.type == "fm" and axis['distance_lowe'] < 0.3) or
                         (item.type == "hist" and (item.algorithm_method == "all" and axis['distance'] > 0.8) or (item.algorithm_method == "bhattacharyya" and axis['distance'] < 0.2))
                     ):
                         RESULT_AXIS.append(axis)

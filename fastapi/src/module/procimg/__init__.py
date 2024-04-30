@@ -279,8 +279,8 @@ class ProcessImage:
                     main_indexes = sub_indexes
                     sub_indexes = _
 
-                # sub index 길이가 10% 이상이면 삭제 포기
-                if len(sub_indexes) > 1 and len(sub_indexes) / len(kmeans.labels_) > 0.1:
+                # sub index 길이가 20% 이상이면 삭제 포기
+                if len(sub_indexes) > 1 and len(sub_indexes) / len(kmeans.labels_) > 0.2:
                     return None
 
                 # sub index 빼고 다시 axis 계산
