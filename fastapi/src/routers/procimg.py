@@ -47,7 +47,7 @@ def cleanWorkerFm(delimg, destimg, body):
         dest_img=destimg,
         full_width=body.full_width,
         lowe=body.lowe,
-        limit_custom=body.limit_custom
+        limit_custom=body.limit_custom,
         use_kmeans_custom_result=body.use_kmeans_custom_result
     )
 
