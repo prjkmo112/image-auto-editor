@@ -13,7 +13,7 @@ export class GetImagesAPI {
             baseURL: `${process.env.FRONT_BACK_HOST}/settings`,
             timeout: Number(process.env.BACK_API_TIMEOUT),
             headers: {
-                'Access-Control-Allow-Origin': "*"
+                'Access-Control-Allow-Origin': process.env.FRONT_BACK_HOST
             }
         })
     }

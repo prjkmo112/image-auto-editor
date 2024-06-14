@@ -34,8 +34,8 @@ RUN npm i -g serve
 
 
 RUN mkdir /entrypointsh
-COPY ./front-react/entrypoint/entry.sh /entrypoint.sh
-RUN chmod -R 777 /entrypoint.sh
+COPY ./front-react/entrypoint /
+RUN chmod -R 777 /entry.sh
 
-ENTRYPOINT [ "/entrypoint.sh" ]
+ENTRYPOINT [ "/entry.sh" ]
 CMD [ "serve", "-s", "build" ]
