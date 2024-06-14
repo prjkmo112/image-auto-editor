@@ -18,6 +18,8 @@ Procfile
 
 # reactjs
 node_modules/
+package.json
+package-lock.json
 
 # testing
 src/coverage
@@ -38,3 +40,4 @@ __pycache__/
 
 # docker - mongodb
 mongo/data/
+mongo/mongo.tar.gz

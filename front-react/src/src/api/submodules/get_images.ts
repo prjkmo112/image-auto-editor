@@ -34,9 +34,6 @@ export class GetImagesAPI {
     }
 
     cleared(filter:any, __cb__:MainIntf.cb.base) {
-        let data = qs.stringify({
-            "fil": filter
-        });
         this.axios.post('/get_settedimg', {
             "fil": filter
         }).then((res) => {
