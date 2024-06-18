@@ -40,6 +40,7 @@ class ProcessImage:
         })
         imgByte = io.BytesIO(r.content)
         img = Image.open(imgByte)
+        img = img.convert("RGB")
         return np.array(img)
     
     def resize(self, imgnpData, per):
