@@ -21,6 +21,8 @@ RUN echo "step 5 > Copy source"
 COPY ./front-react/src /home/src/iae-setter
 WORKDIR /home/src/iae-setter
 
+RUN npm run build
+
 ENV IS_INSIDE_IN_DOCKER_NOT_VALUE_FOR_USER=True
 ENV LANGUAGE=en
 # ENV FRONT_BACK_HOST
@@ -28,14 +30,12 @@ ENV BACK_API_TIMEOUT=30000
 
 EXPOSE 3000
 
-
 RUN echo "step 7 > Service App"
 RUN npm i -g serve
 
-
 RUN mkdir /entrypointsh
-COPY ./front-react/entrypoint /
-RUN chmod -R 777 /entry.sh
+COPY ./front-react/entrypoint /entrypointsh
+RUN chmod -R 777 /entrypointsh
 
-ENTRYPOINT [ "/entry.sh" ]
+ENTRYPOINT [ "/entrypointsh/entry.sh" ]
 CMD [ "serve", "-s", "build" ]

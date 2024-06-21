@@ -47,8 +47,9 @@ def cleanWorkerFm(delimg, destimg, body):
         dest_img=destimg,
         full_width=body.full_width,
         lowe=body.lowe,
+        set_padding=body.padding,
         limit_custom=body.limit_custom,
-        use_kmeans_custom_result=body.use_kmeans_custom_result
+        custom_functions=body.custom_functions
     )
 
     return axis
@@ -82,13 +83,14 @@ class Item_clean(BaseModel):
     db_label:          dict = Field(title='db의 구분하기 위한 label', examples=[{"key": "value", "key2": "value2"}], default={})
     db_filter:         dict = Field(title='db에서 찾기 위한 label 구분자', description="mongodb docs `label`컬럼에 대한 filter 형식", examples=[{ "(`db_label`에서 정한 key)": "(`db_label`에서 정한 value)" }], default={})
     full_width:        bool=True
+    padding:           str = Field(title='padding 크기', default='5%', pattern=r'^[0-9]+%?$')
     batch_size:        int=5
     batch_size_x:      int=5
     px_box_ratio:      list[float] = [1]
 
     lowe:              float=0.3
     limit_custom:      list[str] = Field(default=['passlowe_over_10'])
-    use_kmeans_custom_result: bool=False
+    custom_functions:  list[str] = Field(default=[])
     
 
 @router.post('/clean')
@@ -130,6 +132,10 @@ async def clean(item:Item_clean):
     `full_width`
     잘라낼 때 x축을 고려하지 않고 잘라낸다. 즉, 오직 y축만을 잘라낸다.
 
+    `padding`
+    (default) 5%  
+    padding 크기 %, 숫자 입력 가능
+
     <br><hr>
     
     ### type이 *hist* 일 경우
@@ -166,15 +172,16 @@ async def clean(item:Item_clean):
     ratio test as per Lowe's paper
 
     `limit_custom`
-    특징점 과매칭으로 인한 오류나 그외 여러가지 오류를 방지하기 위한 limit
-        `passlowe_over_10`  : lowe test를 통과한 매칭이 10%도 안된다면 아무리 유사도가 높아도 제외시킴
-        `size_over_twice`   : 자른 결과가 비교한 대상에 비해 2배를 넘는 사이즈라면 제외시킴 (이때 비율 고려 없음, 무조건 사이즈 유사해야 함)
-        `ratio_over_twice`  : `size_over_twice`와 비슷하지만 비율을 고려함
-        `kmeans_sub_limit`  : kmeans 사용 시 서브군집의 크기에 대해 제한을 둔다 (50% 수정불가)
+    특징점 과매칭으로 인한 오류나 그외 여러가지 오류를 방지하기 위한 limit  
+        `passlowe_over_10`  : lowe test를 통과한 매칭이 10%도 안된다면 아무리 유사도가 높아도 제외시킴  
+        `size_over_twice`   : 자른 결과가 비교한 대상에 비해 2배를 넘는 사이즈라면 제외시킴 (이때 비율 고려 없음, 무조건 사이즈 유사해야 함)  
+        `ratio_over_twice`  : `size_over_twice`와 비슷하지만 비율을 고려함  
+        `kmeans_sub_limit`  : kmeans 사용 시 서브군집의 크기에 대해 제한을 둔다 (50% 수정불가)  
 
-    `use_kmeans_custom_result`
-    같은 특징점이 다른 위치에 있을 경우 그 곳에도 매칭되어버려 문제점이 생김  
-    K-means 군집분류를 통해 군집을 2개로 나뉘어 나뉜 keypoint가 많이 벗어나있다면 제외하고 다시 계산하도록 수정  
+    `custom_functions`
+    여러가지 기능들  
+        `use_kmeans`:  같은 특징점이 다른 위치에 있을 경우 그 곳에도 매칭되어버려 문제점이 생김. K-means 군집분류를 통해 군집을 2개로 나뉘어 나뉜 keypoint가 많이 벗어나있다면 제외하고 다시 계산하도록 수정.  
+        
 
     > 대부분의 경우에서는 사용하는 것이 더 정확도가 높게 나올 것임.
     > 하지만, 데이터의 사이즈에 따른 속도 감소는 감수해야할 사항임.
@@ -271,7 +278,7 @@ async def clean(item:Item_clean):
                 totalSlicedLen = 0
                 for axis in results:
                     if (
-                        (item.type == "fm" and axis['distance_lowe'] < 0.3) or
+                        (item.type == "fm" and axis['distance_lowe'] < item.lowe) or
                         (item.type == "hist" and (item.algorithm_method == "all" and axis['distance'] > 0.8) or (item.algorithm_method == "bhattacharyya" and axis['distance'] < 0.2))
                     ):
                         RESULT_AXIS.append(axis)
