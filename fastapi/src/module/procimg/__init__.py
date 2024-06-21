@@ -1,5 +1,6 @@
 import requests
 import numpy as np
+import re
 import io
 from PIL import Image
 import cv2
@@ -193,8 +194,9 @@ class ProcessImage:
         dest_img,
         full_width=False,
         lowe=0.3,
-        use_kmeans_custom_result=False,
-        limit_custom=[]
+        set_padding=5,
+        limit_custom=[],
+        custom_functions=[]
     ):
         """
         [opencv Example](https://docs.opencv.org/4.x/dc/dc3/tutorial_py_matcher.html) 참고
@@ -260,13 +262,14 @@ class ProcessImage:
             # x,y 비율이 자를 대상과 너무 다르면 제외
             nearestPosRatio = (nearestPos['xend'] - nearestPos['xst'])/(nearestPos['yend'] - nearestPos['yst'])
             ratio = except_np.shape[1]/except_np.shape[0]
-            if not full_width and 'ratio_over_twice' in limit_custom and (nearestPosRatio-ratio > 0.5 or ratio-nearestPosRatio > 0.5):
+            if 'ratio_over_twice' in limit_custom and (nearestPosRatio-ratio > 0.5 or ratio-nearestPosRatio > 0.5):
                 return None
 
-            if use_kmeans_custom_result:
+            if 'use_kmeans' in custom_functions:
                 # 같은 특징점이 다른 위치에 있을 경우 그곳에도 매칭되어버려 문제점이 생김
                 # kmeans 군집분류를 통해 군집을 2개로 나뉘어 나뉜 keypoint가 많이 벗어나있다면 제외하고 다시 계산하도록 수정
-                kmeans = KMeans(n_clusters=2, init="k-means++", max_iter=100, random_state=0)
+                n_cluster = 2
+                kmeans = KMeans(n_clusters=n_cluster, init="k-means++", max_iter=100, random_state=0)
                 kmeans.fit(list(map(lambda v: [ kp2[v[0].trainIdx].pt[0], kp2[v[0].trainIdx].pt[1] ], pass_lowe)))
 
                 main_label = 0
@@ -279,6 +282,15 @@ class ProcessImage:
                     _ = main_indexes
                     main_indexes = sub_indexes
                     sub_indexes = _
+
+                # all_indexes = []
+                # for i in range(0, n_cluster):
+                #     all_indexes.append({ "kmeans": np.where(kmeans.labels_ == i)[0], "label": i })
+
+                # main_indexes = all_indexes[0]['kmeans']
+                # main_label = all_indexes[0]['label']
+                # sub_indexes = all_indexes[1]['kmeans']
+                # sub_label = all_indexes[1]['label']
 
                 # sub index 길이가 50% 이상이면 삭제 포기
                 if 'kmeans_sub_limit' in limit_custom and len(sub_indexes) > 1 and len(sub_indexes) / len(kmeans.labels_) > 0.5:
@@ -305,27 +317,28 @@ class ProcessImage:
                 if use_kmeans:
                     nearestPos = axis_kmeans
                     pass_lowe = pass_lowe_kmeans
+                    # __dest_img = self.sliceImage()
+                    # keypoint 다시 설정..
+                    # kp2, des2 = sift.detectAndCompute(dest_img, None)
             
 
-            # padding: 각 길이의 5%
+            # padding
             if full_width:
                 nearestPos['xst'] = 0
                 nearestPos['xend'] = dest_img.shape[1]
             else:
-                padding = (nearestPos['xend'] - nearestPos['xst']) * 5 / 100
-                if padding < 15:
-                    padding = 15
-                if padding > 300:
-                    padding = 300
+                if re.search(r'^[0-9]+%$', set_padding):
+                    padding = (nearestPos['xend'] - nearestPos['xst']) * int(set_padding[:-1]) / 100
+                else:
+                    padding = int(set_padding)
 
                 nearestPos['xst'] -= padding
                 nearestPos['xend'] += padding
 
-            padding = (nearestPos['yend'] - nearestPos['yst']) * 5 / 100
-            if padding < 15:
-                padding = 15
-            if padding > 300:
-                padding = 300
+            if re.search(r'^[0-9]+%$', set_padding):
+                padding = (nearestPos['yend'] - nearestPos['yst']) * int(set_padding[:-1]) / 100
+            else:
+                padding = int(set_padding)
 
             nearestPos['yst'] -= padding
             nearestPos['yend'] += padding
