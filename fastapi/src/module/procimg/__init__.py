@@ -249,21 +249,6 @@ class ProcessImage:
             return None
 
         if len(nearestPos.keys()) >= 4:
-            # 크기가 자를 대상에 비해 너무 크면 제외
-            if (
-                'size_over_twice' in limit_custom and 
-                (
-                    nearestPos['yend'] - nearestPos['yst'] > except_np.shape[1] * 2 or 
-                    (not full_width and nearestPos['xend'] - nearestPos['xst'] > except_np.shape[0] * 2)
-                )
-            ):
-                return None
-            
-            # x,y 비율이 자를 대상과 너무 다르면 제외
-            nearestPosRatio = (nearestPos['xend'] - nearestPos['xst'])/(nearestPos['yend'] - nearestPos['yst'])
-            ratio = except_np.shape[1]/except_np.shape[0]
-            if 'ratio_over_twice' in limit_custom and (nearestPosRatio-ratio > 0.5 or ratio-nearestPosRatio > 0.5):
-                return None
 
             if 'use_kmeans' in custom_functions:
                 # 같은 특징점이 다른 위치에 있을 경우 그곳에도 매칭되어버려 문제점이 생김
@@ -309,7 +294,8 @@ class ProcessImage:
                 axis_y = axis_kmeans['yend'] - axis_kmeans['yst']
 
                 use_kmeans = False
-                if y_cluster/axis_y > 2 or axis_y/y_cluster > 2:
+                y_weight = -1 if y_cluster < 0 else 1
+                if y_weight*y_cluster/axis_y > 2 or y_weight*axis_y/y_cluster > 2:
                     use_kmeans = True
                 if not full_width and (x_cluster/axis_x > 2 or axis_x/x_cluster > 2):
                     use_kmeans = True
@@ -320,7 +306,6 @@ class ProcessImage:
                     # __dest_img = self.sliceImage()
                     # keypoint 다시 설정..
                     # kp2, des2 = sift.detectAndCompute(dest_img, None)
-            
 
             # padding
             if full_width:
@@ -351,6 +336,25 @@ class ProcessImage:
                 nearestPos['yst'] = 0
             if nearestPos['yend'] > dest_img.shape[0]:
                 nearestPos['yend'] = dest_img.shape[0]
+
+            # 크기가 자를 대상에 비해 너무 크면 제외
+            if (
+                'size_over_twice' in limit_custom and
+                (
+                    nearestPos['yend'] - nearestPos['yst'] > except_np.shape[1] * 2 or 
+                    (not full_width and nearestPos['xend'] - nearestPos['xst'] > except_np.shape[0] * 2)
+                )
+            ):
+                return None
+            
+            # x,y 비율이 자를 대상과 너무 다르면 제외
+            nearestPosRatio = (nearestPos['xend'] - nearestPos['xst'])/(nearestPos['yend'] - nearestPos['yst'])
+            ratio = except_np.shape[1]/except_np.shape[0]
+            if (
+                ('ratio_over_twice' in limit_custom and (nearestPosRatio/ratio > 2 or ratio/nearestPosRatio > 2)) or
+                ('ratio_over_fourth' in limit_custom and (nearestPosRatio/ratio > 4 or ratio/nearestPosRatio > 4))
+            ):
+                return None
 
             return nearestPos
         else:
